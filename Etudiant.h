@@ -14,9 +14,17 @@ public:
     QString getPrenom() const;
     void setPrenom(const QString& prenom);
 
+    int getAge() const;
+    void setAge(int age);
+
+    QString getSexe() const;
+    void setSexe(const QString& sexe);
+
 private:
     QString m_nom;
     QString m_prenom;
+    int m_age;
+    QString m_sexe;
 };
 
 #endif 

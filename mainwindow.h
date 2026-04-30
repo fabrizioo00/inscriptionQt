@@ -9,6 +9,7 @@
 #include <QPushButton>
 #include "Etudiant.h"
 #include <QLabel>
+#include <QComboBox>
 
 class MainWindow : public QMainWindow
 {
@@ -53,6 +54,8 @@ private:
     /* UI elements */
     QLineEdit *m_nomEdit;
     QLineEdit *m_prenomEdit;
+    QLineEdit *m_ageEdit;
+    QComboBox *m_sexeComboBox;
 
     QLineEdit *m_searchEdit;
 

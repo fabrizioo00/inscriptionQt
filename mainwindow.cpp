@@ -14,9 +14,11 @@
 #include <QTextStream>
 #include <QInputDialog>
 
+
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), m_currentPage(0)
+    : QMainWindow(parent)
 {
+    m_currentPage = 0;
     m_undoStack = new QUndoStack(this);
     initializeUi();
     loadFromFile();
@@ -31,7 +33,6 @@ void MainWindow::initializeUi()
 {
     QMenu *editMenu;
     QAction *undoAction;
-    QPushButton *btnUndoCorner;
     QWidget *central;
     QVBoxLayout *mainLayout;
     QHBoxLayout *topLayout;
@@ -51,15 +52,15 @@ void MainWindow::initializeUi()
     resize(900, 600);
 
     // Menu 
-    editMenu = menuBar()->addMenu("Edit");
+    editMenu = menuBar()->addMenu("Menu");
+
+
+    
     undoAction = m_undoStack->createUndoAction(this, "Annuler");
     // Change shortcut to Ctrl+C
     undoAction->setShortcut(QKeySequence("Ctrl+C"));
     editMenu->addAction(undoAction);
 
-    btnUndoCorner = new QPushButton("o", this);
-    menuBar()->setCornerWidget(btnUndoCorner, Qt::TopRightCorner);
-    connect(btnUndoCorner, &QPushButton::clicked, m_undoStack, &QUndoStack::undo);
 
     // Central widget 
     central = new QWidget(this);
@@ -74,8 +75,17 @@ void MainWindow::initializeUi()
     formInscription = new QFormLayout(grpInscription);
     m_nomEdit = new QLineEdit();
     m_prenomEdit = new QLineEdit();
+    m_ageEdit = new QLineEdit();
+    m_sexeComboBox = new QComboBox();
+    m_sexeComboBox->addItem("masculin");
+    m_sexeComboBox->addItem("féminin");
+
     formInscription->addRow("Nom:", m_nomEdit);
     formInscription->addRow("Prenom:", m_prenomEdit);
+    formInscription->addRow("Age:", m_ageEdit);
+    formInscription->addRow("Sexe:", m_sexeComboBox);
+
+    
     
     btnAjouter = new QPushButton("Ajouter l'étudiant");
     formInscription->addRow(btnAjouter);
@@ -102,8 +112,8 @@ void MainWindow::initializeUi()
     vboxAffichage = new QVBoxLayout(grpAffichage);
 
     m_table = new QTableWidget();
-    m_table->setColumnCount(3); // Nom, Prenom, Actions 
-    m_table->setHorizontalHeaderLabels({"Nom", "Prénom", "Actions"});
+    m_table->setColumnCount(5); // Nom, Prenom, Age, Sexe, Actions 
+    m_table->setHorizontalHeaderLabels({"Nom", "Prénom", "Age", "Sexe", "Actions"});
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     vboxAffichage->addWidget(m_table);
 
@@ -132,20 +142,27 @@ void MainWindow::onAjouterClicked()
 {
     QString nom;
     QString prenom;
+    QString sexe;
+    int age;
+    bool okAge;
     Etudiant e;
     AddCommand *cmd;
 
     nom = m_nomEdit->text().trimmed();
     prenom = m_prenomEdit->text().trimmed();
+    age = m_ageEdit->text().toInt(&okAge);
+    sexe = m_sexeComboBox->currentText();
 
-    if (nom.isEmpty() || prenom.isEmpty()) 
+    if (nom.isEmpty() || prenom.isEmpty() || sexe.isEmpty() || !okAge || m_ageEdit->text().trimmed().isEmpty()) 
     {
-        QMessageBox::warning(this, "Erreur", "Veuillez remplir tous les champs.");
+        QMessageBox::warning(this, "Erreur", "Veuillez remplir tous les champs correctement.");
         return;
     }
 
     e.setNom(nom);
     e.setPrenom(prenom);
+    e.setAge(age);
+    e.setSexe(sexe);
 
     cmd = new AddCommand();
     cmd->setEtudiants(&m_etudiants);
@@ -156,6 +173,8 @@ void MainWindow::onAjouterClicked()
     // Clear fields 
     m_nomEdit->clear();
     m_prenomEdit->clear();
+    m_ageEdit->clear();
+    m_sexeComboBox->setCurrentIndex(0);
 }
 
 void MainWindow::onRechercherClicked()
@@ -201,6 +220,11 @@ void MainWindow::updateTable()
     int startIndex;
     int endIndex;
     int row;
+    int globalIndex;
+    QWidget *actionWidget;
+    QHBoxLayout *actionLayout;
+    QPushButton *btnModif;
+    QPushButton *btnSuppr;
 
     m_filteredIndices.clear();
 
@@ -213,8 +237,7 @@ void MainWindow::updateTable()
         } 
         else 
         {
-            const Etudiant &e = m_etudiants[i];
-            if (e.getNom().toLower().contains(m_currentSearch) || e.getPrenom().toLower().contains(m_currentSearch)) 
+            if (m_etudiants[i].getNom().toLower().contains(m_currentSearch) || m_etudiants[i].getPrenom().toLower().contains(m_currentSearch)) 
             {
                 m_filteredIndices.append(i);
             }
@@ -245,20 +268,12 @@ void MainWindow::updateTable()
 
     for (row = 0; row < (endIndex - startIndex); ++row) 
     {
-        int globalIndex;
-        QWidget *actionWidget;
-        QHBoxLayout *actionLayout;
-        QPushButton *btnModif;
-        QPushButton *btnSuppr;
-
         globalIndex = m_filteredIndices[startIndex + row];
-        // Block scope declaration of e 
-        {
-            const Etudiant &e = m_etudiants[globalIndex];
 
-            m_table->setItem(row, 0, new QTableWidgetItem(e.getNom()));
-            m_table->setItem(row, 1, new QTableWidgetItem(e.getPrenom()));
-        }
+        m_table->setItem(row, 0, new QTableWidgetItem(m_etudiants[globalIndex].getNom()));
+        m_table->setItem(row, 1, new QTableWidgetItem(m_etudiants[globalIndex].getPrenom()));
+        m_table->setItem(row, 2, new QTableWidgetItem(QString::number(m_etudiants[globalIndex].getAge())));
+        m_table->setItem(row, 3, new QTableWidgetItem(m_etudiants[globalIndex].getSexe()));
 
         // Create widget for Actions 
         actionWidget = new QWidget();
@@ -271,7 +286,7 @@ void MainWindow::updateTable()
         actionLayout->addWidget(btnModif);
         actionLayout->addWidget(btnSuppr);
         
-        m_table->setCellWidget(row, 2, actionWidget);
+        m_table->setCellWidget(row, 4, actionWidget);
 
         btnModif->setProperty("globalIndex", globalIndex);
         btnSuppr->setProperty("globalIndex", globalIndex);
@@ -312,8 +327,13 @@ void MainWindow::modifierEtudiant(int globalIndex)
     Etudiant oldE;
     QString newNom;
     QString newPrenom;
+    int newAge;
+    QString newSexe;
     Etudiant newE;
     EditCommand *cmd;
+    bool ok;
+    QStringList sexeItems;
+    int currentSexeIndex;
 
     if(globalIndex < 0 || globalIndex >= m_etudiants.size()) return;
     
@@ -324,8 +344,23 @@ void MainWindow::modifierEtudiant(int globalIndex)
     newPrenom = QInputDialog::getText(this, "Modifier", "Prénom:", QLineEdit::Normal, oldE.getPrenom());
     if(newPrenom.isEmpty()) return;
 
+    newAge = QInputDialog::getInt(this, "Modifier", "Age:", oldE.getAge(), 0, 150, 1, &ok);
+    if(!ok) return;
+
+    sexeItems << "masculin";
+    sexeItems << "feminin";
+
+    currentSexeIndex = sexeItems.indexOf(oldE.getSexe());
+    if  (currentSexeIndex == -1) currentSexeIndex = 0;
+
+    newSexe = QInputDialog::getItem(this, "Modifier", "Sexe:", sexeItems, currentSexeIndex, false, &ok);
+    if (!ok || newSexe.isEmpty()) return;
+
+
     newE.setNom(newNom);
     newE.setPrenom(newPrenom);
+    newE.setAge(newAge);
+    newE.setSexe(newSexe);
 
     cmd = new EditCommand();
     cmd->setEtudiants(&m_etudiants);
@@ -387,8 +422,7 @@ void MainWindow::saveToFile()
         QTextStream out(&file);
         for (i = 0; i < m_etudiants.size(); ++i) 
         {
-            const Etudiant &e = m_etudiants[i];
-            out << e.getNom() << "," << e.getPrenom() << "\n";
+            out << m_etudiants[i].getNom() << "," << m_etudiants[i].getPrenom() << "," << m_etudiants[i].getAge() << "," << m_etudiants[i].getSexe() << "\n";
         }
         file.close();
     }
@@ -397,22 +431,28 @@ void MainWindow::saveToFile()
 void MainWindow::loadFromFile()
 {
     QFile file("etudiants.csv");
+    QString line;
+    QStringList parts;
+    Etudiant e;
+
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) 
     {
 
         QTextStream in(&file);
         while (!in.atEnd()) 
         {
-            QString line;
-            QStringList parts;
-
             line = in.readLine();
             parts = line.split(',');
             if (parts.size() >= 2) 
             {
-                Etudiant e;
+                e = Etudiant();
                 e.setNom(parts[0]);
                 e.setPrenom(parts[1]);
+                if (parts.size() >= 4) 
+                {
+                    e.setAge(parts[2].toInt());
+                    e.setSexe(parts[3]);
+                }
                 m_etudiants.append(e);
             }
         }
