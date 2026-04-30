@@ -43,7 +43,7 @@ private:
     void initializeUi();
 
     QList<Etudiant> m_etudiants;
-    QList<int> m_filteredIndices; /* indices in m_etudiants that match search */
+    QList<int> m_filteredIndices; // indices in m_etudiants that match search 
     QString m_currentSearch;
 
     QUndoStack *m_undoStack;
@@ -51,7 +51,7 @@ private:
     int m_currentPage;
     const int ITEMS_PER_PAGE = 10;
 
-    /* UI elements */
+    // UI elements 
     QLineEdit *m_nomEdit;
     QLineEdit *m_prenomEdit;
     QLineEdit *m_ageEdit;
@@ -62,8 +62,8 @@ private:
     QTableWidget *m_table;
     QLabel *m_pageLabel;
     
-    /* Original UI pointer just to be safe with deletion, though we won't use setupUi from it */
+    // Original UI pointer just to be safe with deletion
     class Ui_MainWindow *ui_designer = nullptr; 
 };
 
-#endif /* MAINWINDOW_H */
+#endif 
