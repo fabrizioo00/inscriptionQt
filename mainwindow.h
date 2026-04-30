@@ -10,6 +10,7 @@
 #include "Etudiant.h"
 #include <QLabel>
 #include <QComboBox>
+#define ITEMS_PER_PAGE 10
 
 class MainWindow : public QMainWindow
 {
@@ -49,7 +50,6 @@ private:
     QUndoStack *m_undoStack;
 
     int m_currentPage;
-    const int ITEMS_PER_PAGE = 10;
 
     // UI elements 
     QLineEdit *m_nomEdit;
