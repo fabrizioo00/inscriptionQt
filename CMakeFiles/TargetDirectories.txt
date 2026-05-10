@@ -1,0 +1,9 @@
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/inscription.dir
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/edit_cache.dir
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/rebuild_cache.dir
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/list_install_components.dir
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/install.dir
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/install/local.dir
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/install/strip.dir
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/inscription_autogen_timestamp_deps.dir
+/home/fabrizio/Bureau/ongoing_projects/inscription/CMakeFiles/inscription_autogen.dir

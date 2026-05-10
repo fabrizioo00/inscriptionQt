@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "ui_mainwindow.h"
 #include "Commands.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -13,129 +14,49 @@
 #include <QFile>
 #include <QTextStream>
 #include <QInputDialog>
+#include <QFileDialog>
 
+#define NOM_FICHIER_SAUVEGARDE "etudiants.csv"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
 {
+    QAction *undoAction;
+    QAction *redoAction;
+    ui->setupUi(this);
     m_currentPage = 0;
     m_undoStack = new QUndoStack(this);
-    initializeUi();
+
+    // stretching table
+    ui->table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    undoAction = m_undoStack->createUndoAction(this, "Annuler");
+    undoAction->setShortcut(QKeySequence("Ctrl+C"));
+    ui->menuEdition->addAction(undoAction);
+
+    redoAction = m_undoStack->createRedoAction(this, "Rétablir");
+    redoAction->setShortcut(QKeySequence("Ctrl+Y"));
+    ui->menuEdition->addAction(redoAction);
+
+
+    connect(ui->btnAjouter, &QPushButton::clicked, this, &MainWindow::onAjouterClicked);
+    connect(ui->btnRechercher, &QPushButton::clicked, this, &MainWindow::onRechercherClicked);
+    connect(ui->btnPrecedent, &QPushButton::clicked, this, &MainWindow::onPrecedentClicked);
+    connect(ui->btnSuivant, &QPushButton::clicked, this, &MainWindow::onSuivantClicked);
+
     loadFromFile();
     updateTable();
+
+    ui->table->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->table, &QTableWidget::customContextMenuRequested, this, &MainWindow::onCustomContextMenu);
+
+    connect(ui->actionOuvrir, &QAction::triggered, this, &MainWindow::onActionOuvrirTriggered);
 }
 
 MainWindow::~MainWindow()
 {
-}
-
-void MainWindow::initializeUi()
-{
-    QMenu *editMenu;
-    QAction *undoAction;
-    QWidget *central;
-    QVBoxLayout *mainLayout;
-    QHBoxLayout *topLayout;
-    QGroupBox *grpInscription;
-    QFormLayout *formInscription;
-    QPushButton *btnAjouter;
-    QGroupBox *grpRecherche;
-    QVBoxLayout *vboxRecherche;
-    QPushButton *btnRechercher;
-    QGroupBox *grpAffichage;
-    QVBoxLayout *vboxAffichage;
-    QHBoxLayout *paginationLayout;
-    QPushButton *btnPrecedent;
-    QPushButton *btnSuivant;
-
-    setWindowTitle("Gestion des Inscriptions");
-    resize(900, 600);
-
-    // Menu 
-    editMenu = menuBar()->addMenu("Menu");
-
-
-    
-    undoAction = m_undoStack->createUndoAction(this, "Annuler");
-    // Change shortcut to Ctrl+C
-    undoAction->setShortcut(QKeySequence("Ctrl+C"));
-    editMenu->addAction(undoAction);
-
-
-    // Central widget 
-    central = new QWidget(this);
-    setCentralWidget(central);
-    mainLayout = new QVBoxLayout(central);
-
-    // Top part - Split Left (Inscription) and Right (Recherche) 
-    topLayout = new QHBoxLayout();
-    
-    // Left Group: Inscription 
-    grpInscription = new QGroupBox("Inscription");
-    formInscription = new QFormLayout(grpInscription);
-    m_nomEdit = new QLineEdit();
-    m_prenomEdit = new QLineEdit();
-    m_ageEdit = new QLineEdit();
-    m_sexeComboBox = new QComboBox();
-    m_sexeComboBox->addItem("masculin");
-    m_sexeComboBox->addItem("féminin");
-
-    formInscription->addRow("Nom:", m_nomEdit);
-    formInscription->addRow("Prenom:", m_prenomEdit);
-    formInscription->addRow("Age:", m_ageEdit);
-    formInscription->addRow("Sexe:", m_sexeComboBox);
-
-    
-    
-    btnAjouter = new QPushButton("Ajouter l'étudiant");
-    formInscription->addRow(btnAjouter);
-    connect(btnAjouter, &QPushButton::clicked, this, &MainWindow::onAjouterClicked);
-
-    // Right Group: Recherche 
-    grpRecherche = new QGroupBox("Recherche");
-    vboxRecherche = new QVBoxLayout(grpRecherche);
-    m_searchEdit = new QLineEdit();
-    m_searchEdit->setPlaceholderText("Rechercher par nom ou prénom...");
-    btnRechercher = new QPushButton("Rechercher");
-    
-    vboxRecherche->addWidget(m_searchEdit);
-    vboxRecherche->addWidget(btnRechercher);
-    vboxRecherche->addStretch();
-
-    connect(btnRechercher, &QPushButton::clicked, this, &MainWindow::onRechercherClicked);
-
-    topLayout->addWidget(grpInscription);
-    topLayout->addWidget(grpRecherche);
-
-    // Bottom part - Affichage 
-    grpAffichage = new QGroupBox("Affichage");
-    vboxAffichage = new QVBoxLayout(grpAffichage);
-
-    m_table = new QTableWidget();
-    m_table->setColumnCount(5); // Nom, Prenom, Age, Sexe, Actions 
-    m_table->setHorizontalHeaderLabels({"Nom", "Prénom", "Age", "Sexe", "Actions"});
-    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    vboxAffichage->addWidget(m_table);
-
-    // Pagination controls 
-    paginationLayout = new QHBoxLayout();
-    btnPrecedent = new QPushButton("Précédent");
-    m_pageLabel = new QLabel("Page 1");
-    btnSuivant = new QPushButton("Suivant");
-
-    paginationLayout->addStretch();
-    paginationLayout->addWidget(btnPrecedent);
-    paginationLayout->addWidget(m_pageLabel);
-    paginationLayout->addWidget(btnSuivant);
-    paginationLayout->addStretch();
-
-    vboxAffichage->addLayout(paginationLayout);
-
-    connect(btnPrecedent, &QPushButton::clicked, this, &MainWindow::onPrecedentClicked);
-    connect(btnSuivant, &QPushButton::clicked, this, &MainWindow::onSuivantClicked);
-
-    mainLayout->addLayout(topLayout);
-    mainLayout->addWidget(grpAffichage);
+    delete ui;
 }
 
 void MainWindow::onAjouterClicked()
@@ -148,12 +69,12 @@ void MainWindow::onAjouterClicked()
     Etudiant e;
     AddCommand *cmd;
 
-    nom = m_nomEdit->text().trimmed();
-    prenom = m_prenomEdit->text().trimmed();
-    age = m_ageEdit->text().toInt(&okAge);
-    sexe = m_sexeComboBox->currentText();
+    nom = ui->nomEdit->text().trimmed();
+    prenom = ui->prenomEdit->text().trimmed();
+    age = ui->ageEdit->text().toInt(&okAge);
+    sexe = ui->sexeComboBox->currentText();
 
-    if (nom.isEmpty() || prenom.isEmpty() || sexe.isEmpty() || !okAge || m_ageEdit->text().trimmed().isEmpty()) 
+    if (!Etudiant::estNomValide(nom) || !Etudiant::estNomValide(prenom) || sexe.isEmpty() || !okAge || !Etudiant::estAgeValide(age)) 
     {
         QMessageBox::warning(this, "Erreur", "Veuillez remplir tous les champs correctement.");
         return;
@@ -165,21 +86,20 @@ void MainWindow::onAjouterClicked()
     e.setSexe(sexe);
 
     cmd = new AddCommand();
-    cmd->setEtudiants(&m_etudiants);
     cmd->setEtudiant(e);
     cmd->setMainWindow(this);
     m_undoStack->push(cmd);
 
     // Clear fields 
-    m_nomEdit->clear();
-    m_prenomEdit->clear();
-    m_ageEdit->clear();
-    m_sexeComboBox->setCurrentIndex(0);
+    ui->nomEdit->clear();
+    ui->prenomEdit->clear();
+    ui->ageEdit->clear();
+    ui->sexeComboBox->setCurrentIndex(0);
 }
 
 void MainWindow::onRechercherClicked()
 {
-    m_currentSearch = m_searchEdit->text().trimmed().toLower();
+    m_currentSearch = ui->searchEdit->text().trimmed().toLower();
     m_currentPage = 0;
     updateTable();
 }
@@ -221,10 +141,6 @@ void MainWindow::updateTable()
     int endIndex;
     int row;
     int globalIndex;
-    QWidget *actionWidget;
-    QHBoxLayout *actionLayout;
-    QPushButton *btnModif;
-    QPushButton *btnSuppr;
 
     m_filteredIndices.clear();
 
@@ -248,8 +164,8 @@ void MainWindow::updateTable()
     if (totalItems == 0) 
     {
         m_currentPage = 0;
-        m_pageLabel->setText("Page 1/1");
-        m_table->setRowCount(0);
+        ui->pageLabel->setText("Page 1/1");
+        ui->table->setRowCount(0);
         return;
     }
 
@@ -259,40 +175,22 @@ void MainWindow::updateTable()
         m_currentPage = maxPage;
     }
 
-    m_pageLabel->setText(QString("Page %1/%2").arg(m_currentPage + 1).arg(maxPage + 1));
+    ui->pageLabel->setText(QString("Page %1/%2").arg(m_currentPage + 1).arg(maxPage + 1));
 
     startIndex = m_currentPage * ITEMS_PER_PAGE;
     endIndex = qMin(startIndex + ITEMS_PER_PAGE, totalItems);
 
-    m_table->setRowCount(endIndex - startIndex);
+    ui->table->setRowCount(endIndex - startIndex);
 
     for (row = 0; row < (endIndex - startIndex); ++row) 
     {
         globalIndex = m_filteredIndices[startIndex + row];
 
-        m_table->setItem(row, 0, new QTableWidgetItem(m_etudiants[globalIndex].getNom()));
-        m_table->setItem(row, 1, new QTableWidgetItem(m_etudiants[globalIndex].getPrenom()));
-        m_table->setItem(row, 2, new QTableWidgetItem(QString::number(m_etudiants[globalIndex].getAge())));
-        m_table->setItem(row, 3, new QTableWidgetItem(m_etudiants[globalIndex].getSexe()));
+        ui->table->setItem(row, 0, new QTableWidgetItem(m_etudiants[globalIndex].getNom()));
+        ui->table->setItem(row, 1, new QTableWidgetItem(m_etudiants[globalIndex].getPrenom()));
+        ui->table->setItem(row, 2, new QTableWidgetItem(QString::number(m_etudiants[globalIndex].getAge())));
+        ui->table->setItem(row, 3, new QTableWidgetItem(m_etudiants[globalIndex].getSexe()));
 
-        // Create widget for Actions 
-        actionWidget = new QWidget();
-        actionLayout = new QHBoxLayout(actionWidget);
-        actionLayout->setContentsMargins(0,0,0,0);
-        
-        btnModif = new QPushButton("Modifier");
-        btnSuppr = new QPushButton("Supprimer");
-        
-        actionLayout->addWidget(btnModif);
-        actionLayout->addWidget(btnSuppr);
-        
-        m_table->setCellWidget(row, 4, actionWidget);
-
-        btnModif->setProperty("globalIndex", globalIndex);
-        btnSuppr->setProperty("globalIndex", globalIndex);
-
-        connect(btnModif, &QPushButton::clicked, this, &MainWindow::onModifierEtudiantClicked);
-        connect(btnSuppr, &QPushButton::clicked, this, &MainWindow::onSupprimerEtudiantClicked);
     }
 }
 
@@ -363,10 +261,9 @@ void MainWindow::modifierEtudiant(int globalIndex)
     newE.setSexe(newSexe);
 
     cmd = new EditCommand();
-    cmd->setEtudiants(&m_etudiants);
+    cmd->setMainWindow(this);
     cmd->setIndex(globalIndex);
     cmd->setNewEtudiant(newE);
-    cmd->setMainWindow(this);
     m_undoStack->push(cmd);
 }
 
@@ -375,9 +272,8 @@ void MainWindow::supprimerEtudiant(int globalIndex)
     RemoveCommand *cmd;
 
     cmd = new RemoveCommand();
-    cmd->setEtudiants(&m_etudiants);
-    cmd->setIndex(globalIndex);
     cmd->setMainWindow(this);
+    cmd->setIndex(globalIndex);
     m_undoStack->push(cmd);
 }
 
@@ -414,13 +310,17 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::saveToFile()
 {
-    QFile file("etudiants.csv");
+    QFile file;
     int i;
 
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) 
+    file.setFileName(NOM_FICHIER_SAUVEGARDE);
+
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        QTextStream out(&file);
-        for (i = 0; i < m_etudiants.size(); ++i) 
+        QTextStream out;
+        
+        out.setDevice(&file);
+        for (i = 0; i < m_etudiants.size(); i++) 
         {
             out << m_etudiants[i].getNom() << "," << m_etudiants[i].getPrenom() << "," << m_etudiants[i].getAge() << "," << m_etudiants[i].getSexe() << "\n";
         }
@@ -430,35 +330,163 @@ void MainWindow::saveToFile()
 
 void MainWindow::loadFromFile()
 {
-    QFile file("etudiants.csv");
+    QFile file;
     QString line;
-    QStringList parts;
     Etudiant e;
+
+    file.setFileName(NOM_FICHIER_SAUVEGARDE);
 
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) 
     {
-
-        QTextStream in(&file);
+        QTextStream in;
+        
+        in.setDevice(&file);
         while (!in.atEnd()) 
         {
             line = in.readLine();
-            parts = line.split(',');
-            if (parts.size() >= 2) 
+            e = Etudiant::fromString(line);
+            if (Etudiant::estNomValide(e.getNom())) 
             {
-                e = Etudiant();
-                e.setNom(parts[0]);
-                e.setPrenom(parts[1]);
-                if (parts.size() >= 4) 
-                {
-                    e.setAge(parts[2].toInt());
-                    e.setSexe(parts[3]);
-                }
                 m_etudiants.append(e);
             }
         }
         file.close();
         
-        // Mark starting point to avoid saying dirty if we just loaded 
+ 
         m_undoStack->setClean();
+    }
+}
+
+int MainWindow::getEtudiantsCount() const
+{
+    return m_etudiants.size();
+}
+
+Etudiant MainWindow::getEtudiant(int index) const
+{
+    return m_etudiants.at(index);
+}
+
+void MainWindow::insererEtudiant(int index, const Etudiant &e)
+{
+    m_etudiants.insert(index, e);
+    updateTable();
+}
+
+void MainWindow::ajouterEtudiant(const Etudiant &e)
+{
+    m_etudiants.append(e);
+    updateTable();
+}
+
+void MainWindow::supprimerEtudiantAt(int index)
+{
+    m_etudiants.removeAt(index);
+    updateTable();
+}
+
+void MainWindow::modifierEtudiantAt(int index, const Etudiant &e)
+{
+    m_etudiants[index] = e;
+    updateTable();
+}
+
+
+void::MainWindow::onCustomContextMenu(const QPoint &pos)
+{
+    QTableWidgetItem *item;
+    int row;
+    int startIndex;
+    int globalIndex;
+    QAction *actionModif;
+    QAction *actionSuppr;
+    QAction *selecledAction;
+    QMenu menu(this);
+    
+    
+    item = ui->table->itemAt(pos);
+    if (!item) return;
+    
+    row = item->row();
+
+    startIndex = m_currentPage * ITEMS_PER_PAGE;
+    globalIndex = m_filteredIndices[startIndex + row];
+    
+    actionModif = menu.addAction("Modifier");
+    actionSuppr = menu.addAction("Supprimer");
+
+    selecledAction = menu.exec(ui->table->mapToGlobal(pos));
+
+    if (selecledAction == actionModif)
+    {
+        modifierEtudiant(globalIndex);
+    }
+    else if (selecledAction == actionSuppr)
+    {
+        supprimerEtudiant(globalIndex);
+    }
+}
+
+void MainWindow::onActionOuvrirTriggered()
+{
+    QString fileName;
+    QFile file;
+    QTextStream in;
+    QString firstLine;
+    QStringList parts;
+
+    fileName = QFileDialog::getOpenFileName(this, "Ouvrir un fichier", "", "fichiers csv (*.csv)");
+
+    if (fileName.isEmpty()) 
+    {
+        return;
+    }
+
+    file.setFileName(fileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) 
+    {
+        QMessageBox::critical(this, "Erreur", "Impossible d'ouvrir le fichier.");
+        return;
+    }
+
+    in.setDevice(&file);
+    firstLine = in.readLine();
+    file.close();
+
+    
+    parts = firstLine.split(',');
+    if (!firstLine.isEmpty() && parts.size() < 4) 
+    {
+        QMessageBox::critical(this, "Erreur de format", "Le fichier CSV ne respecte pas le format attendu (Nom,Prenom,Age,Sexe).");
+        return;
+    }
+
+    //Le format est validé, on remplace les données actuelles
+    m_etudiants.clear();
+    m_undoStack->clear(); // On réinitialise l'historique car le contexte a changé 
+
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) 
+    {
+        QTextStream inStream;
+        QString line;
+        Etudiant e;
+
+        inStream.setDevice(&file);
+        
+        while (!inStream.atEnd()) 
+        {
+            line = inStream.readLine();
+            e = Etudiant::fromString(line);
+            if (Etudiant::estNomValide(e.getNom())) 
+            {
+                m_etudiants.append(e);
+            }
+        }
+        file.close();
+        
+        m_currentPage = 0;
+        updateTable();
+        
+        QMessageBox::information(this, "Succès", "Fichier chargé avec succès !");
     }
 }

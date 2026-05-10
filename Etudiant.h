@@ -5,7 +5,7 @@
 class Etudiant 
 {
 public:
-    /* Le constructeur par défaut est nécessaire pour que QList fonctionne correctement. */
+
     Etudiant();
 
     QString getNom() const;
@@ -19,6 +19,10 @@ public:
 
     QString getSexe() const;
     void setSexe(const QString& sexe);
+
+    static bool estAgeValide(int age);
+    static bool estNomValide(const QString& nom);
+    static Etudiant fromString(const QString& ligneCsv);
 
 private:
     QString m_nom;

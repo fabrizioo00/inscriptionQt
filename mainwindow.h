@@ -3,13 +3,18 @@
 
 #include <QMainWindow>
 #include <QUndoStack>
-#include <QList>
+#include <QVector>
 #include <QTableWidget>
 #include <QLineEdit>
 #include <QPushButton>
 #include "Etudiant.h"
 #include <QLabel>
 #include <QComboBox>
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class MainWindow; }
+QT_END_NAMESPACE
+
 #define ITEMS_PER_PAGE 10
 
 class MainWindow : public QMainWindow
@@ -21,6 +26,13 @@ public:
     ~MainWindow();
 
     void updateTable();
+
+    int getEtudiantsCount() const;
+    Etudiant getEtudiant(int index) const;
+    void insererEtudiant(int index, const Etudiant &e);
+    void ajouterEtudiant(const Etudiant &e);
+    void supprimerEtudiantAt(int index);
+    void modifierEtudiantAt(int index, const Etudiant &e);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -35,35 +47,28 @@ private slots:
     void onModifierEtudiantClicked();
     void onSupprimerEtudiantClicked();
 
+    void onCustomContextMenu(const QPoint &pos);
+
+
+    void onActionOuvrirTriggered();
+
 private:
     void modifierEtudiant(int globalIndex);
     void supprimerEtudiant(int globalIndex);
     void loadFromFile();
     void saveToFile();
 
-    void initializeUi();
-
-    QList<Etudiant> m_etudiants;
-    QList<int> m_filteredIndices; // indices in m_etudiants that match search 
+    QVector<Etudiant> m_etudiants;
+    QVector<int> m_filteredIndices;
     QString m_currentSearch;
+
+    static const QString NOM_FICHIER_SAUVEGARDE;
 
     QUndoStack *m_undoStack;
 
     int m_currentPage;
 
-    // UI elements 
-    QLineEdit *m_nomEdit;
-    QLineEdit *m_prenomEdit;
-    QLineEdit *m_ageEdit;
-    QComboBox *m_sexeComboBox;
-
-    QLineEdit *m_searchEdit;
-
-    QTableWidget *m_table;
-    QLabel *m_pageLabel;
-    
-    // Original UI pointer just to be safe with deletion
-    class Ui_MainWindow *ui_designer = nullptr; 
+    Ui::MainWindow *ui;
 };
 
 #endif 

@@ -1,16 +1,12 @@
 #include "Commands.h"
 #include "mainwindow.h"
 
-AddCommand::AddCommand(QUndoCommand *parent)
-    : QUndoCommand(parent), m_etudiants(nullptr), m_index(-1), m_mw(nullptr)
+AddCommand::AddCommand() : QUndoCommand()
 {
-    setText("Ajouter etudiant");
+    m_index = -1;
+    m_mw = nullptr;
 }
 
-void AddCommand::setEtudiants(QList<Etudiant> *etudiants) 
-{ 
-    m_etudiants = etudiants; 
-}
 void AddCommand::setEtudiant(const Etudiant &etudiant) 
 { 
     m_etudiant = etudiant; 
@@ -22,90 +18,84 @@ void AddCommand::setMainWindow(MainWindow *mw)
 
 void AddCommand::undo()
 {
-    if (m_index >= 0 && m_index < m_etudiants->size()) 
+    if (m_index >= 0 && m_mw && m_index < m_mw->getEtudiantsCount()) 
     {
-        m_etudiants->removeAt(m_index);
-        if (m_mw) m_mw->updateTable();
+        m_mw->supprimerEtudiantAt(m_index);
     }
 }
 
 void AddCommand::redo()
 {
-    if (m_index == -1) 
+    if (m_mw) 
     {
-        m_etudiants->append(m_etudiant);
-        m_index = m_etudiants->size() - 1;
-    } 
-    else 
-    {
-        m_etudiants->insert(m_index, m_etudiant);
+        if (m_index == -1) 
+        {
+            m_mw->ajouterEtudiant(m_etudiant);
+            m_index = m_mw->getEtudiantsCount() - 1;
+        } 
+        else 
+        {
+            m_mw->insererEtudiant(m_index, m_etudiant);
+        }
     }
-    if (m_mw) m_mw->updateTable();
 }
 
 
-RemoveCommand::RemoveCommand(QUndoCommand *parent)
-    : QUndoCommand(parent), m_etudiants(nullptr), m_index(-1), m_mw(nullptr)
+RemoveCommand::RemoveCommand() : QUndoCommand()
 {
-    setText("Supprimer etudiant");
+    m_index = -1;
+    m_mw = nullptr;
 }
 
-void RemoveCommand::setEtudiants(QList<Etudiant> *etudiants) 
-{ 
-    m_etudiants = etudiants; 
-    if (m_index >= 0 && m_etudiants && m_index < m_etudiants->size()) 
-    {
-        m_etudiant = m_etudiants->at(m_index);
-    }
-}
 void RemoveCommand::setIndex(int index) 
 { 
     m_index = index; 
-    if (m_index >= 0 && m_etudiants && m_index < m_etudiants->size()) 
+    if (m_index >= 0 && m_mw && m_index < m_mw->getEtudiantsCount()) 
     {
-        m_etudiant = m_etudiants->at(m_index);
+        m_etudiant = m_mw->getEtudiant(m_index);
     }
 }
-void RemoveCommand::setMainWindow(MainWindow *mw) { m_mw = mw; }
+void RemoveCommand::setMainWindow(MainWindow *mw) 
+{ 
+    m_mw = mw; 
+}
 
 void RemoveCommand::undo()
 {
-    m_etudiants->insert(m_index, m_etudiant);
-    if (m_mw) m_mw->updateTable();
+    if (m_mw)
+    {
+        m_mw->insererEtudiant(m_index, m_etudiant);
+    } 
+        
 }
 
 void RemoveCommand::redo()
 {
-    m_etudiants->removeAt(m_index);
-    if (m_mw) m_mw->updateTable();
-}
-
-
-EditCommand::EditCommand(QUndoCommand *parent)
-    : QUndoCommand(parent), m_etudiants(nullptr), m_index(-1), m_mw(nullptr)
-{
-    setText("Modifier etudiant");
-}
-
-void EditCommand::setEtudiants(QList<Etudiant> *etudiants) 
-{ 
-    m_etudiants = etudiants; 
-    if (m_index >= 0 && m_etudiants && m_index < m_etudiants->size()) 
+    if (m_mw)
     {
-        m_oldEtudiant = m_etudiants->at(m_index);
-    }
+        m_mw->supprimerEtudiantAt(m_index);
+    } 
+        
 }
+
+
+EditCommand::EditCommand() : QUndoCommand()
+{
+    m_index = -1;
+    m_mw = nullptr;
+}
+
 void EditCommand::setIndex(int index) 
 { 
     m_index = index; 
-    if (m_index >= 0 && m_etudiants && m_index < m_etudiants->size()) 
+    if (m_index >= 0 && m_mw && m_index < m_mw->getEtudiantsCount()) 
     {
-        m_oldEtudiant = m_etudiants->at(m_index);
+        m_oldEtudiant = m_mw->getEtudiant(m_index);
     }
 }
 void EditCommand::setNewEtudiant(const Etudiant &newEtudiant) 
 { 
-    m_newEtudiant = newEtudiant; 
+    m_newEtudiant = newEtudiant;
 }
 void EditCommand::setMainWindow(MainWindow *mw) 
 { 
@@ -114,12 +104,17 @@ void EditCommand::setMainWindow(MainWindow *mw)
 
 void EditCommand::undo()
 {
-    (*m_etudiants)[m_index] = m_oldEtudiant;
-    if (m_mw) m_mw->updateTable();
+    if (m_mw)
+    {
+        m_mw->modifierEtudiantAt(m_index, m_oldEtudiant);
+    } 
+        
 }
 
 void EditCommand::redo()
 {
-    (*m_etudiants)[m_index] = m_newEtudiant;
-    if (m_mw) m_mw->updateTable();
+    if (m_mw)
+    {
+        m_mw->modifierEtudiantAt(m_index, m_newEtudiant);
+    } 
 }
