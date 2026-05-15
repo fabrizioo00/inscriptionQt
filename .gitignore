@@ -80,3 +80,12 @@ CMakeLists.txt.user*
 .rcc/
 .uic/
 /build*/
+
+
+.qt/
+CMakeFiles/
+inscription_autogen/
+.gitignore  # si tu veux le cacher (rarement)
+CMakeCache.txt
+CMakeLists.txt
+cmake_install.cmake
