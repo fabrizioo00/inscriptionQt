@@ -85,7 +85,7 @@ CMakeLists.txt.user*
 .qt/
 CMakeFiles/
 inscription_autogen/
-.gitignore  # si tu veux le cacher (rarement)
+.gitignore
 CMakeCache.txt
 CMakeLists.txt
 cmake_install.cmake
